@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H형강 커팅 플랜 (Cutting Plan)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 강력한 텍스트 선택(블록) 방지 - 입력 필드 제외 */
+        body, html { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-user-drag: none; }
+        input, select, textarea, button { -webkit-user-select: auto; -moz-user-select: auto; -ms-user-select: auto; user-select: auto; }
+        
+        /* PDF 스타일 테이블 전용 CSS */
+        .cp-table th { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 4px; font-size: 11px; text-align: center; color: #334155; font-weight: 900; }
+        .cp-table td { border: 1px solid #cbd5e1; padding: 6px 4px; font-size: 11px; text-align: center; color: #0f172a; font-weight: 500; }
+        .cp-table tr:nth-child(even) { background-color: #f8fafc; }
+        .cp-table tr:hover { background-color: #e2e8f0; }
+
+        /* 인쇄 및 PDF 저장 전용 스타일 */
+        @media print {
+            body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            header, footer, #toast, section:not(#resultSection), .hide-on-print { display: none !important; }
+            #resultSection { display: block !important; margin: 0; padding: 0; }
+            #resultSection > div { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            @page { size: A4 portrait; margin: 10mm; }
+            .cp-table th { background-color: #f1f5f9 !important; }
+            .cp-table tr:nth-child(even) { background-color: #f8fafc !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between" oncontextmenu="return false" ondragstart="return false" onselectstart="return false">
+
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-white font-black text-xl tracking-tight">H형강 절단 최적화 산출기</h1>
+                    <p class="text-slate-400 text-xs font-bold">Cutting Plan Optimization Tool (Pro)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:block text-slate-300 font-black text-sm mr-2 tracking-widest">
+                    (주)스틸앤조이
+                </div>
+                <div class="bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700/50 text-right">
+                    <span class="text-xs text-slate-400 block font-semibold">SteelNJoy</span>
+                    <a href="http://www.snjoy.co.kr" target="_blank" class="text-sm font-bold text-green-400 flex items-center gap-1.5 justify-end hover:text-green-300 transition" title="스틸앤조이 홈페이지 방문">
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                        www.snjoy.co.kr
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        
+        <section class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition hover:shadow-md hide-on-print">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span class="w-1.5 h-5 bg-indigo-600 rounded-full"></span>
+                    1. 공사 개요 입력
+                </h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">공사명</label>
+                    <input type="text" id="projectName" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700" placeholder="예: 우디스 3동">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">조합 산출 일시</label>
+                    <input type="datetime-local" id="calcDate" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">담당자</label>
+                    <input type="text" id="managerName" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700" placeholder="예: 홍길동 대리">
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition hover:shadow-md hide-on-print">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span class="w-1.5 h-5 bg-indigo-600 rounded-full"></span>
+                    2. H형강 규격 일괄 적용 (수동 입력용)
+                </h2>
+            </div>
+            <div class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="w-full md:w-1/2">
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">적용할 기본 규격 선택</label>
+                    <select id="globalProfile" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-900 bg-indigo-50/30">
+                        <option value="">-- 직접 입력 (엑셀 사용 또는 개별 입력 시) --</option>
+                        <optgroup label="H-100 ~ H-200 대">
+                            <option value="H100*100*6*8">H100*100*6*8</option>
+                            <option value="H125*60*6*8">H125*60*6*8</option>
+                            <option value="H125*120*6.5*9">H125*120*6.5*9</option>
+                            <option value="H125*125*6.5*9">H125*125*6.5*9</option>
+                            <option value="H148*100*6*9">H148*100*6*9</option>
+                            <option value="H150*75*5*7">H150*75*5*7</option>
+                            <option value="H150*75*6*9">H150*75*6*9</option>
+                            <option value="H150*100*8*13">H150*100*8*13</option>
+                            <option value="H150*150*7*10">H150*150*7*10</option>
+                            <option value="H175*90*5*8">H175*90*5*8</option>
+                            <option value="H175*175*7.5*11">H175*175*7.5*11</option>
+                            <option value="H194*150*6*9">H194*150*6*9</option>
+                            <option value="H198*99*4.5*7">H198*99*4.5*7</option>
+                            <option value="H200*100*5.5*8">H200*100*5.5*8</option>
+                            <option value="H200*200*8*12">H200*200*8*12</option>
+                            <option value="H200*204*12*12">H200*204*12*12</option>
+                            <option value="H208*202*10*16">H208*202*10*16</option>
+                            <option value="H244*175*7*11">H244*175*7*11</option>
+                            <option value="H244*252*11*11">H244*252*11*11</option>
+                            <option value="H248*124*5*8">H248*124*5*8</option>
+                            <option value="H248*249*8*13">H248*249*8*13</option>
+                            <option value="H250*125*6*9">H250*125*6*9</option>
+                            <option value="H250*250*9*14">H250*250*9*14</option>
+                            <option value="H250*255*14*14">H250*255*14*14</option>
+                            <option value="H294*200*8*12">H294*200*8*12</option>
+                            <option value="H294*302*12*12">H294*302*12*12</option>
+                            <option value="H298*149*5.5*8">H298*149*5.5*8</option>
+                            <option value="H298*201*9*14">H298*201*9*14</option>
+                            <option value="H298*299*9*14">H298*299*9*14</option>
+                        </optgroup>
+                        <optgroup label="H-300 대">
+                            <option value="H300*150*6.5*9">H300*150*6.5*9</option>
+                            <option value="H300*300*10*15">H300*300*10*15</option>
+                            <option value="H300*305*15*15">H300*305*15*15</option>
+                            <option value="H304*301*11*17">H304*301*11*17</option>
+                            <option value="H304*307*17*17">H304*307*17*17</option>
+                            <option value="H310*305*15*20">H310*305*15*20</option>
+                            <option value="H310*310*20*20">H310*310*20*20</option>
+                            <option value="H336*249*8*12">H336*249*8*12</option>
+                            <option value="H338*351*13*13">H338*351*13*13</option>
+                            <option value="H340*250*9*14">H340*250*9*14</option>
+                            <option value="H344*348*10*16">H344*348*10*16</option>
+                            <option value="H344*354*16*16">H344*354*16*16</option>
+                            <option value="H346*174*6*9">H346*174*6*9</option>
+                            <option value="H350*175*7*11">H350*175*7*11</option>
+                            <option value="H350*350*12*19">H350*350*12*19</option>
+                            <option value="H350*357*19*19">H350*357*19*19</option>
+                            <option value="H356*352*14*22">H356*352*14*22</option>
+                            <option value="H386*299*9*14">H386*299*9*14</option>
+                            <option value="H388*402*15*15">H388*402*15*15</option>
+                            <option value="H390*300*10*16">H390*300*10*16</option>
+                            <option value="H394*398*11*18">H394*398*11*18</option>
+                            <option value="H394*405*18*18">H394*405*18*18</option>
+                            <option value="H396*199*7*11">H396*199*7*11</option>
+                        </optgroup>
+                        <optgroup label="H-400 대">
+                            <option value="H400*200*8*13">H400*200*8*13</option>
+                            <option value="H400*400*13*21">H400*400*13*21</option>
+                            <option value="H400*408*21*21">H400*408*21*21</option>
+                            <option value="H406*403*16*24">H406*403*16*24</option>
+                            <option value="H414*405*18*28">H414*405*18*28</option>
+                            <option value="H428*407*20*35">H428*407*20*35</option>
+                            <option value="H434*299*10*15">H434*299*10*15</option>
+                            <option value="H440*300*11*18">H440*300*11*18</option>
+                            <option value="H446*199*8*12">H446*199*8*12</option>
+                            <option value="H450*200*9*14">H450*200*9*14</option>
+                            <option value="H458*417*30*50">H458*417*30*50</option>
+                            <option value="H482*300*11*15">H482*300*11*15</option>
+                            <option value="H488*300*11*18">H488*300*11*18</option>
+                            <option value="H496*199*9*14">H496*199*9*14</option>
+                            <option value="H498*432*45*70">H498*432*45*70</option>
+                        </optgroup>
+                        <optgroup label="H-500 ~ H-900 대">
+                            <option value="H500*200*10*16">H500*200*10*16</option>
+                            <option value="H506*201*11*19">H506*201*11*19</option>
+                            <option value="H582*300*12*17">H582*300*12*17</option>
+                            <option value="H588*300*12*20">H588*300*12*20</option>
+                            <option value="H594*302*14*23">H594*302*14*23</option>
+                            <option value="H596*199*10*15">H596*199*10*15</option>
+                            <option value="H600*200*11*17">H600*200*11*17</option>
+                            <option value="H606*201*12*20">H606*201*12*20</option>
+                            <option value="H612*202*13*23">H612*202*13*23</option>
+                            <option value="H692*300*13*20">H692*300*13*20</option>
+                            <option value="H700*300*13*24">H700*300*13*24</option>
+                            <option value="H708*302*15*28">H708*302*15*28</option>
+                            <option value="H792*300*14*22">H792*300*14*22</option>
+                            <option value="H800*300*14*26">H800*300*14*26</option>
+                            <option value="H808*302*16*30">H808*302*16*30</option>
+                            <option value="H890*299*15*23">H890*299*15*23</option>
+                            <option value="H900*300*16*28">H900*300*16*28</option>
+                            <option value="H912*302*18*34">H912*302*18*34</option>
+                            <option value="H918*303*19*37">H918*303*19*37</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="w-full md:w-auto flex gap-2">
+                    <button type="button" onclick="applyProfileToAll()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        아래 목록에 일괄 적용
+                    </button>
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-3 font-semibold bg-slate-50 p-2 rounded border border-slate-100">
+                💡 팁: 위에서 규격을 미리 선택해두면 [줄 추가] 버튼을 누를 때마다 <strong>해당 규격이 자동으로 채워져</strong> 수동 입력이 편리해집니다.
+            </p>
+        </section>
+
+        <section class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition hover:shadow-md hide-on-print">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span class="w-1.5 h-5 bg-indigo-600 rounded-full"></span>
+                    3. 가용 원부재(정척) 재고 글로벌 설정 및 톱날 로스(Loss)
+                </h2>
+            </div>
+            <div class="flex flex-col md:flex-row gap-6 mb-4">
+                <div class="w-full md:w-3/4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <label class="text-sm font-bold text-slate-600 whitespace-nowrap">새 정척 추가 (M)</label>
+                        <input type="number" id="newStockLength" step="0.1" class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm" placeholder="예: 15">
+                        <button type="button" onclick="addNewStock()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded-lg transition text-sm flex items-center gap-1 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                            추가
+                        </button>
+                        <span class="text-[11px] text-slate-400 font-semibold ml-2">※ 하단 목록의 길이는 직접 수정(입력)이 가능합니다.</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3" id="stockContainer"></div>
+                </div>
+                <div class="w-full md:w-1/4 border-l border-slate-100 pl-6 bg-rose-50/50 rounded-r-2xl p-4">
+                    <label class="block text-sm font-black text-rose-800 mb-2 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        톱날 두께 로스 설정 (Loss)
+                    </label>
+                    <div class="relative">
+                        <input type="number" id="bladeLoss" class="w-full px-4 py-2.5 border border-rose-200 rounded-xl bg-white text-rose-700 font-black text-lg focus:ring-rose-500 focus:border-rose-500" value="5">
+                        <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-slate-400 font-bold">mm</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition hover:shadow-md hide-on-print">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3 mb-6">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span class="w-1.5 h-5 bg-indigo-600 rounded-full"></span>
+                    4. 절단 치수 목록 (강종별 분류)
+                </h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importExcel(event)">
+                    <button type="button" onclick="document.getElementById('excelInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 px-4 rounded-xl transition flex items-center shadow-sm">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        엑셀 자동 분석 가져오기
+                    </button>
+                    <button type="button" onclick="resetCutList()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-2 px-4 rounded-xl transition flex items-center border border-slate-200">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        목록 초기화
+                    </button>
+                </div>
+            </div>
+
+            <div class="hidden md:grid grid-cols-12 gap-3 px-4 py-2 bg-slate-50 rounded-xl text-xs font-bold text-slate-500 mb-3 border border-slate-200">
+                <div class="col-span-2">부재기호 (IDMK/DWGNO)</div>
+                <div class="col-span-3">규격 (MEMBSIZE)</div>
+                <div class="col-span-2">절단치수 (LENG/mm)</div>
+                <div class="col-span-2">강종 (MATL)</div>
+                <div class="col-span-2">수량 (QTY)</div>
+                <div class="col-span-1 text-center">동작</div>
+            </div>
+
+            <div id="cutListContainer" class="space-y-3"></div>
+
+            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-100 pt-5">
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button type="button" onclick="addRow()" class="flex-grow sm:flex-none text-indigo-600 hover:text-indigo-800 text-sm font-extrabold flex items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-4 py-2.5 rounded-xl transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                        줄 추가
+                    </button>
+                    <button type="button" onclick="resetAllExceptProjectInfo()" class="flex-grow sm:flex-none bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-1">
+                        전체 초기화
+                    </button>
+                </div>
+                <button type="button" onclick="calculatePlan()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-black px-8 py-4 rounded-xl shadow-lg hover:shadow-indigo-300 transition text-sm flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    전체 데이터 최적화 계산 실행
+                </button>
+            </div>
+        </section>
+
+        <section id="resultSection" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition hover:shadow-md">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 mb-6 gap-4">
+                    <div class="hide-on-print">
+                        <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+                            <span class="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
+                            5. CUTTING PLAN LIST (최적화 결과 리포트)
+                        </h2>
+                        <p class="text-xs text-slate-500 font-bold mt-1 ml-4">※ 각 규격별로 "부분 수정/재정리" 기능을 이용해 개별적인 커팅 플랜 조율이 가능합니다.</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto hide-on-print">
+                        <button onclick="window.print()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-sm py-3 px-6 rounded-xl transition flex items-center justify-center shadow-md">
+                            <svg class="w-4.5 h-4.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            PDF 인쇄 / 저장
+                        </button>
+                        <button onclick="exportExcel()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-extrabold text-sm py-3 px-6 rounded-xl transition flex items-center justify-center shadow-md">
+                            <svg class="w-4.5 h-4.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            CP LIST 엑셀 다운로드
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="masterSummary" class="mb-8"></div>
+                <div id="resultContent" class="space-y-10"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 부분 수정 및 재정리 모달 (팝업창) -->
+    <div id="recalcModal" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex-col items-center justify-center backdrop-blur-sm px-4 hide-on-print">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="font-black text-lg text-slate-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        해당 규격 부분 수정 및 재정리
+                    </h3>
+                    <p class="text-xs font-bold text-indigo-600 mt-1" id="recalcGroupName"></p>
+                </div>
+                <button onclick="closeRecalcModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-rose-100 hover:text-rose-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow bg-slate-100/50">
+                <div class="mb-4 flex items-center gap-2">
+                    <label class="text-sm font-bold text-slate-600 whitespace-nowrap">새 정척 추가 (M)</label>
+                    <input type="number" id="recalcNewStockLength" step="0.1" class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm" placeholder="예: 15">
+                    <button type="button" onclick="addRecalcStock()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded-lg transition text-sm flex items-center gap-1 shadow-sm">
+                        추가
+                    </button>
+                    <span class="text-[11px] text-slate-500 ml-2">※ 여기서 수정된 설정은 해당 규격의 계산에만 독립적으로 반영됩니다.</span>
+                </div>
+                <div id="recalcStockContainer" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3"></div>
+            </div>
+            <div class="p-5 border-t border-slate-200 flex justify-end gap-3 bg-white">
+                <button onclick="closeRecalcModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">취소</button>
+                <button onclick="applyRecalc()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black shadow-md transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    이 설정으로 재정리 실행
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center gap-3 hide-on-print">
+        <div id="toastIcon" class="p-1 rounded-full text-slate-900"></div>
+        <div id="toastMsg" class="text-sm font-semibold flex-grow"></div>
+    </div>
+
+    <footer class="bg-slate-950 text-slate-500 py-6 text-center text-xs border-t border-slate-900 mt-12 hide-on-print">
+        <div class="max-w-7xl mx-auto px-4 leading-loose">
+            <p class="font-bold text-slate-400">© 2026 SteelNJoy 개발팀. All rights reserved.</p>
+            <p>본 프로그램의 저작권은 SNJ 개발팀에게 있습니다. 무단 복제, 배포, 수정, 상업적 이용을 금지합니다.</p>
+            <p class="mt-3 text-rose-900/80 font-bold text-[11px]">본 프로그램의 계산 결과는 참고용이며, 실제 적산 결과에 대한 책임은 사용자에게 있습니다.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- 강력한 보안 모듈 --- (필요 시 주석 처리하여 개발 모드로 사용하세요)
+        /*
+        document.addEventListener('copy', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault(); showToast("저작권 보호를 위해 복사가 차단되었습니다.", true);
+            }
+        });
+        document.addEventListener('cut', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); }
+        });
+        document.addEventListener('selectstart', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); }
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.keyCode === 123) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) { e.preventDefault(); return false; }
+        });
+        // setInterval(function() { (function() { return false; } ['constructor']('debugger') ['call']()); }, 500); // 디버거 무한 루프
+        */
+
+        // 글로벌 상태 변수
+        const DEFAULT_STOCK_LENGTHS = [8, 9, 10, 11, 12, 13, 14]; 
+        let stockItems = []; 
+        let globalGroupedCuts = {}; 
+        let groupSpecificStocks = {}; 
+        let globalResultData = {}; 
+        let globalUnassignedData = {}; 
+        let currentRecalcGroupKey = null;
+        let currentRecalcStocks = [];
+
+        window.onload = function() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            document.getElementById('calcDate').value = (new Date(now - offset)).toISOString().slice(0, 16);
+
+            DEFAULT_STOCK_LENGTHS.forEach((len, idx) => {
+                stockItems.push({ id: idx, len: len, qty: 50, enabled: true });
+            });
+            buildStockInventoryUI();
+            addRow(); addRow(); addRow();
+        };
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMsg = document.getElementById('toastMsg');
+
+            toastMsg.innerText = message;
+            if (isError) {
+                toast.classList.replace('bg-slate-900', 'bg-red-600');
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                toast.classList.replace('bg-red-600', 'bg-slate-900');
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // H형강 규격(Profile) 텍스트를 분석하여 단위 중량(kg/m)을 근사 계산하는 함수 (최적화)
+        function getUnitWeight(profile) {
+            if(!profile) return 0;
+            // "H200*200*8*12" 또는 "H-200X200X8X12" 등 다양한 포맷에서 숫자만 추출
+            // 알파벳, 한글, 특수기호를 모두 공백으로 치환 후 숫자 배열 생성
+            let clean = profile.toUpperCase().replace(/[A-Z가-힣]/g, ' ').replace(/[^0-9.\s]/g, ' ').trim();
+            let parts = clean.split(/\s+/).map(Number).filter(n => !isNaN(n) && n > 0);
+            
+            if (parts.length >= 4) {
+                let A = parts[0]; let B = parts[1]; let t1 = parts[2]; let t2 = parts[3];
+                // 단면적(mm2) = 웹 면적 + 2 * 플랜지 면적
+                let area = t1 * (A - 2 * t2) + 2 * B * t2;
+                // 강철 비중(7.85) 적용 및 코너 R(필렛) 보정 계수(1.025) 적용
+                return (area * 7.85 / 1000) * 1.025; 
+            }
+            return 0;
+        }
+
+        function applyProfileToAll() {
+            const sel = document.getElementById('globalProfile').value;
+            if(!sel) return showToast("적용할 규격을 먼저 선택하세요.", true);
+            const inputs = document.querySelectorAll('.cut-profile');
+            if(inputs.length === 0) return;
+            inputs.forEach(input => input.value = sel);
+            showToast(`모든 목록에 ${sel} 규격이 일괄 적용되었습니다.`);
+        }
+
+        function addNewStock() {
+            const input = document.getElementById('newStockLength');
+            const val = parseFloat(input.value);
+            if (isNaN(val) || val <= 0) return showToast("올바른 길이를 M단위로 입력하세요.", true);
+            if (stockItems.some(s => s.len === val)) return showToast("이미 존재하는 규격입니다.", true);
+            
+            stockItems.push({ id: Date.now(), len: val, qty: 50, enabled: true });
+            stockItems.sort((a, b) => a.len - b.len);
+            
+            buildStockInventoryUI();
+            input.value = '';
+            showToast(`${val}M 가용 정척이 추가되었습니다.`);
+        }
+
+        function buildStockInventoryUI() {
+            const container = document.getElementById('stockContainer');
+            container.innerHTML = '';
+
+            stockItems.forEach((item, index) => {
+                const isChecked = item.enabled ? 'checked' : '';
+                const disableStr = item.enabled ? '' : 'disabled';
+                const styleClass = item.enabled ? 
+                    'w-full px-2 py-1.5 border border-slate-200 rounded text-xs font-black text-slate-700' : 
+                    'w-full px-2 py-1.5 border border-slate-200 rounded text-xs font-black bg-slate-100 text-slate-400';
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-50 p-2 rounded-lg border border-slate-200 shadow-sm transition ${item.enabled?'':'opacity-60'}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="flex items-center space-x-1 cursor-pointer">
+                            <input type="checkbox" ${isChecked} onchange="updateStockItem(${index}, 'enabled', this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-3 h-3">
+                            <div class="flex items-end">
+                                <input type="number" value="${item.len}" step="0.1" onchange="updateStockItem(${index}, 'len', this.value)" class="w-12 text-center bg-transparent border-b border-slate-400 focus:border-indigo-600 outline-none text-[12px] font-extrabold text-indigo-900 mx-1 p-0">
+                                <span class="text-[10px] font-bold text-slate-600 mb-0.5">M</span>
+                            </div>
+                        </label>
+                    </div>
+                    <div>
+                        <input type="number" value="${item.qty}" min="0" onchange="updateStockItem(${index}, 'qty', this.value)" ${disableStr} class="${styleClass}" title="최대 가용량">
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateStockItem(index, field, value) {
+            if(field === 'enabled') {
+                stockItems[index].enabled = value;
+                buildStockInventoryUI();
+            } else if(field === 'len') {
+                let v = parseFloat(value);
+                if(isNaN(v) || v <= 0) v = 8;
+                stockItems[index].len = v;
+            } else if(field === 'qty') {
+                let v = parseInt(value);
+                if(isNaN(v) || v < 0) v = 0;
+                stockItems[index].qty = v;
+            }
+        }
+
+        function addRow(mark = '', profile = '', length = '', matl = '', qty = 1) {
+            if(!profile) {
+                const globalProf = document.getElementById('globalProfile');
+                if(globalProf && globalProf.value) profile = globalProf.value;
+            }
+            const container = document.getElementById('cutListContainer');
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 p-4 md:p-2 bg-white rounded-xl border border-slate-100 md:border-transparent md:bg-transparent items-center cut-item transition hover:bg-slate-50';
+            
+            row.innerHTML = `
+                <div class="col-span-2">
+                    <label class="block md:hidden text-[10px] font-bold text-slate-400 mb-1">부재기호</label>
+                    <input type="text" class="cut-mark w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700" placeholder="IDMK/DWGNO" value="${mark}">
+                </div>
+                <div class="col-span-3">
+                    <label class="block md:hidden text-[10px] font-bold text-slate-400 mb-1">규격(MEMBSIZE)</label>
+                    <input type="text" class="cut-profile w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-indigo-900 bg-indigo-50/30" placeholder="예: H200*200" value="${profile}">
+                </div>
+                <div class="col-span-2">
+                    <label class="block md:hidden text-[10px] font-bold text-slate-400 mb-1">절단 치수 (mm)</label>
+                    <input type="number" class="cut-length w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700" placeholder="LENG" value="${length}">
+                </div>
+                <div class="col-span-2">
+                    <label class="block md:hidden text-[10px] font-bold text-slate-400 mb-1">강종 (MATL)</label>
+                    <input type="text" class="cut-matl w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700" placeholder="SM275" value="${matl || 'SM275'}">
+                </div>
+                <div class="col-span-2">
+                    <label class="block md:hidden text-[10px] font-bold text-slate-400 mb-1">수량 (QTY)</label>
+                    <input type="number" class="cut-qty w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700" min="1" value="${qty}">
+                </div>
+                <div class="col-span-1 text-center mt-2 md:mt-0">
+                    <button type="button" class="w-full md:w-auto bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-3 py-1.5 rounded-lg text-xs transition" onclick="removeRow(this)">삭제</button>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeRow(btn) {
+            if (document.getElementById('cutListContainer').children.length > 1) {
+                btn.closest('.cut-item').remove();
+            } else {
+                showToast("최소 1개의 입력란은 필요합니다.", true);
+            }
+        }
+
+        function resetCutList() {
+            document.getElementById('cutListContainer').innerHTML = ''; 
+            addRow(); addRow(); addRow();
+            document.getElementById('excelInput').value = ''; 
+            showToast("목록이 초기화 되었습니다.");
+        }
+
+        function resetAllExceptProjectInfo() {
+            stockItems = [];
+            DEFAULT_STOCK_LENGTHS.forEach((len, idx) => {
+                stockItems.push({ id: idx, len: len, qty: 50, enabled: true });
+            });
+            buildStockInventoryUI(); 
+            document.getElementById('globalProfile').value = ''; 
+            resetCutList();
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('resultContent').innerHTML = ''; 
+            document.getElementById('masterSummary').innerHTML = '';
+            
+            globalGroupedCuts = {}; groupSpecificStocks = {};
+            globalResultData = {}; globalUnassignedData = {};
+            
+            showToast("공사 개요를 제외한 전체 설정이 초기화되었습니다.");
+        }
+
+        function importExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let workbook, jsonData;
+                    if(file.name.endsWith('.csv')) {
+                        const text = new TextDecoder("euc-kr").decode(new Uint8Array(e.target.result));
+                        const rows = text.split('\n');
+                        jsonData = rows.map(r => r.split(',').map(c => c.trim()));
+                    } else {
+                        const data = new Uint8Array(e.target.result);
+                        workbook = XLSX.read(data, {type: 'array'});
+                        jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
+                    }
+                    
+                    if (!jsonData || jsonData.length < 2) return showToast("엑셀에 읽을 데이터가 없습니다.", true);
+
+                    let headerRow = jsonData[0].map(c => String(c).trim().toUpperCase());
+                    let idmkCol = headerRow.indexOf('IDMK');
+                    let dwgnoCol = headerRow.indexOf('DWGNO');
+                    let profCol = headerRow.indexOf('MEMBSIZE');
+                    let lenCol = headerRow.indexOf('LENG');
+                    let matlCol = headerRow.indexOf('MATL');
+                    let qtyCol = headerRow.indexOf('QTY');
+
+                    // 컬럼 매핑 보완
+                    if (lenCol === -1 || qtyCol === -1 || profCol === -1) {
+                        headerRow.forEach((val, c) => {
+                            if (profCol === -1 && ['규격','사이즈','형강','PROFILE','SIZE'].some(k=>val.includes(k))) profCol = c;
+                            if (idmkCol === -1 && ['기호','마크','MARK','품명','ID'].some(k=>val.includes(k))) idmkCol = c;
+                            if (lenCol === -1 && ['길이','치수','LENG','LENGTH'].some(k=>val.includes(k))) lenCol = c;
+                            if (matlCol === -1 && ['강종','재질','MATL','MATERIAL'].some(k=>val.includes(k))) matlCol = c;
+                            if (qtyCol === -1 && ['수량','개수','QTY','COUNT'].some(k=>val.includes(k))) qtyCol = c;
+                        });
+                    }
+
+                    document.getElementById('cutListContainer').innerHTML = '';
+                    let importedCount = 0;
+
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row[lenCol] === undefined || String(row[lenCol]).trim() === '') continue;
+
+                        let rowProf = profCol !== -1 ? String(row[profCol] || '').trim() : '';
+                        let rawIdmk = idmkCol !== -1 ? String(row[idmkCol] || '').trim() : '';
+                        let rawDwg = dwgnoCol !== -1 ? String(row[dwgnoCol] || '').trim() : '';
+                        let rowMark = '';
+                        if (rawDwg && rawIdmk) rowMark = `${rawDwg}_${rawIdmk}`;
+                        else if (rawIdmk) rowMark = rawIdmk;
+                        else rowMark = rawDwg;
+
+                        let rowMatl = matlCol !== -1 && String(row[matlCol]).trim() !== '' ? String(row[matlCol]).trim() : 'SM275';
+                        let rawLen = String(row[lenCol] || '').replace(/,/g, '').replace(/[^\d.]/g, '');
+                        let lengthVal = parseFloat(rawLen);
+                        
+                        // M 단위를 mm 로 치환 방어 (통상 25M 를 넘지 않는다고 가정)
+                        if (!isNaN(lengthVal) && lengthVal > 0 && lengthVal < 25) lengthVal = Math.round(lengthVal * 1000); 
+                        else lengthVal = Math.round(lengthVal);
+
+                        let qtyVal = 1;
+                        if (qtyCol !== -1) {
+                            let rawQty = parseFloat(String(row[qtyCol]).replace(/[^\d.]/g, ''));
+                            if (!isNaN(rawQty) && rawQty > 0) qtyVal = Math.round(rawQty);
+                        }
+
+                        if (!isNaN(lengthVal) && lengthVal > 0 && rowProf) {
+                            addRow(rowMark, rowProf, lengthVal, rowMatl, qtyVal);
+                            importedCount++;
+                        }
+                    }
+
+                    if (importedCount === 0) { addRow(); showToast("유효한 데이터가 발견되지 않았습니다.", true); } 
+                    else { showToast(`${importedCount}건의 데이터를 성공적으로 불러왔습니다.`); }
+                } catch (error) {
+                    showToast("파일을 분석하는 중 오류가 발생했습니다.", true);
+                    console.error(error);
+                }
+                event.target.value = ''; 
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function calculatePlan() {
+            let enabledStocks = [];
+            stockItems.forEach(item => {
+                if (item.enabled && item.qty > 0 && item.len > 0) {
+                    enabledStocks.push({ length: Math.round(item.len * 1000), qty: item.qty });
+                }
+            });
+            if (enabledStocks.length === 0) return showToast("가용 자재가 최소 1본 이상 활성화되어야 합니다.", true);
+
+            const items = document.querySelectorAll('.cut-item');
+            let groupedCuts = {}; 
+            let totalRequestedCount = 0;
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const markInput = item.querySelector('.cut-mark').value.trim();
+                const profInput = item.querySelector('.cut-profile').value.trim();
+                const lenInput = parseInt(item.querySelector('.cut-length').value);
+                const matlInput = item.querySelector('.cut-matl').value.trim() || 'SM275';
+                const qtyInput = parseInt(item.querySelector('.cut-qty').value);
+
+                if (!isNaN(lenInput) && lenInput > 0 && !isNaN(qtyInput) && qtyInput > 0 && profInput) {
+                    let groupKey = matlInput + "||" + profInput;
+                    if (!groupedCuts[groupKey]) groupedCuts[groupKey] = [];
+                    for (let q = 0; q < qtyInput; q++) {
+                        groupedCuts[groupKey].push({ original: lenInput, mark: markInput });
+                    }
+                    totalRequestedCount += qtyInput;
+                }
+            }
+            if (totalRequestedCount === 0) return showToast("계산할 유효한 절단 치수 데이터가 없습니다.", true);
+
+            globalGroupedCuts = groupedCuts; 
+            groupSpecificStocks = {}; 
+            globalResultData = {}; globalUnassignedData = {};
+
+            for (let groupKey in globalGroupedCuts) {
+                runAlgorithmForGroup(groupKey, enabledStocks);
+            }
+
+            document.getElementById('resultSection').classList.remove('hidden');
+            renderPDFStyleResults();
+            showToast("전체 데이터의 최적화 산출이 완료되었습니다.");
+        }
+
+        function runAlgorithmForGroup(groupKey, enabledStocks) {
+            let BLADE_LOSS = parseInt(document.getElementById('bladeLoss').value) || 5;
+            let stocks = [...enabledStocks].sort((a, b) => b.length - a.length);
+            
+            if(stocks.length === 0) {
+                globalResultData[groupKey] = [];
+                globalUnassignedData[groupKey] = [...globalGroupedCuts[groupKey]];
+                return;
+            }
+            
+            const maxAvailableStock = stocks[0].length;
+            let validCuts = [];
+            let invalidCuts = [];
+            
+            globalGroupedCuts[groupKey].forEach(c => {
+                if(c.original + BLADE_LOSS > maxAvailableStock) invalidCuts.push(c);
+                else validCuts.push({...c, withLoss: c.original + BLADE_LOSS});
+            });
+
+            let unassignedCuts = validCuts.sort((a, b) => b.withLoss - a.withLoss);
+            let usedStocks = [];
+            let tempInventory = {}; stocks.forEach(s => tempInventory[s.length] = s.qty);
+
+            while (unassignedCuts.length > 0) {
+                let candidates = [];
+                
+                for (let s = 0; s < stocks.length; s++) {
+                    const stockLen = stocks[s].length;
+                    if (tempInventory[stockLen] <= 0) continue; 
+                    let combo = findBestKnapsackCombo(unassignedCuts, stockLen);
+                    if (combo.indices.length > 0) {
+                        let waste = stockLen - combo.totalLossLength;
+                        let lossRate = waste / stockLen;
+                        candidates.push({ stockLen, combo, waste, lossRate });
+                    }
+                }
+                
+                if (candidates.length === 0) break;
+
+                // [요구사항 2 적용] 스크랩 1M 이하 유지 및 길이가 긴 원부재 적극 활용 알고리즘
+                candidates.sort((a, b) => {
+                    let aGood = a.waste <= 1000; // 스크랩 1000mm(1M) 이하 여부
+                    let bGood = b.waste <= 1000;
+                    if (aGood && !bGood) return -1;
+                    if (!aGood && bGood) return 1;
+                    if (aGood && bGood) {
+                        // 둘 다 1M 이하인 훌륭한 조합이라면, 더 긴 정척 자재를 우선적으로 소모 (장축 우선)
+                        if (b.stockLen !== a.stockLen) return b.stockLen - a.stockLen; 
+                        return a.waste - b.waste; // 같은 길이라면 낭비가 더 적은 쪽
+                    }
+                    // 둘 다 1M를 초과할 경우, 순수하게 손실률(Loss Rate)이 낮은 것을 채택
+                    return a.lossRate - b.lossRate;
+                });
+
+                let best = candidates[0];
+                let bestStockSize = best.stockLen;
+                let bestComboIndices = best.combo.indices;
+
+                tempInventory[bestStockSize]--;
+                let stockInstance = { stockSize: bestStockSize, cuts: [], withLossSum: 0 };
+                bestComboIndices.sort((a, b) => b - a);
+                bestComboIndices.forEach(idx => {
+                    stockInstance.cuts.push({ length: unassignedCuts[idx].original, mark: unassignedCuts[idx].mark });
+                    stockInstance.withLossSum += unassignedCuts[idx].withLoss;
+                    unassignedCuts.splice(idx, 1);
+                });
+                stockInstance.cuts.sort((a, b) => b.length - a.length);
+                stockInstance.remain = bestStockSize - stockInstance.withLossSum;
+                usedStocks.push(stockInstance);
+            }
+
+            globalResultData[groupKey] = groupIdenticalStocks(usedStocks);
+            
+            let finalUnassigned = [...invalidCuts, ...unassignedCuts];
+            if (finalUnassigned.length > 0) {
+                globalUnassignedData[groupKey] = finalUnassigned;
+            } else {
+                delete globalUnassignedData[groupKey];
+            }
+        }
+
+        // DP 기반 1D Bin Packing
+        function findBestKnapsackCombo(cuts, capacity) {
+            let n = cuts.length;
+            let dp = new Int32Array(capacity + 1);
+            let keep = Array.from({ length: n }, () => new Uint8Array(capacity + 1));
+            for (let i = 0; i < n; i++) {
+                let weight = cuts[i].withLoss;
+                for (let w = capacity; w >= weight; w--) {
+                    if (dp[w - weight] + weight > dp[w]) { dp[w] = dp[w - weight] + weight; keep[i][w] = 1; }
+                }
+            }
+            let indices = [], tempCap = dp[capacity];
+            for (let i = n - 1; i >= 0; i--) {
+                let weight = cuts[i].withLoss;
+                if (tempCap >= weight && keep[i][tempCap] === 1) { indices.push(i); tempCap -= weight; }
+            }
+            return { indices: indices, totalLossLength: dp[capacity] };
+        }
+
+        function groupIdenticalStocks(stocks) {
+            let grouped = [];
+            stocks.forEach(s => {
+                let cutMap = {};
+                s.cuts.forEach(c => {
+                    let cKey = c.length + "||" + (c.mark||'');
+                    if(!cutMap[cKey]) cutMap[cKey] = { length: c.length, mark: c.mark, qty: 0 };
+                    cutMap[cKey].qty++;
+                });
+                let groupedCuts = Object.values(cutMap).sort((a,b)=>b.length - a.length);
+                
+                let sig = s.stockSize + "_" + JSON.stringify(groupedCuts);
+                let existing = grouped.find(g => g.sig === sig);
+                if (existing) {
+                    existing.stockQty++;
+                } else {
+                    grouped.push({
+                        sig: sig,
+                        stockSize: s.stockSize,
+                        remain: s.remain,
+                        combi: s.stockSize - s.remain,
+                        stockQty: 1,
+                        groupedCuts: groupedCuts
+                    });
+                }
+            });
+            return grouped;
+        }
+
+        // ==========================================
+        // 팝업 모달 기반: 부분 수정 및 재정리 기능
+        // ==========================================
+        function openRecalcModal(gk) {
+            currentRecalcGroupKey = gk;
+            document.getElementById('recalcGroupName').innerText = gk.replace('||', ' / ');
+            
+            if(groupSpecificStocks[gk]) {
+                currentRecalcStocks = JSON.parse(JSON.stringify(groupSpecificStocks[gk]));
+            } else {
+                currentRecalcStocks = JSON.parse(JSON.stringify(stockItems));
+            }
+            
+            renderRecalcStockUI();
+            document.getElementById('recalcModal').classList.remove('hidden');
+            document.getElementById('recalcModal').classList.add('flex');
+        }
+
+        function closeRecalcModal() {
+            document.getElementById('recalcModal').classList.add('hidden');
+            document.getElementById('recalcModal').classList.remove('flex');
+        }
+
+        function addRecalcStock() {
+            const input = document.getElementById('recalcNewStockLength');
+            const val = parseFloat(input.value);
+            if (isNaN(val) || val <= 0) return showToast("올바른 길이를 M단위로 입력하세요.", true);
+            if (currentRecalcStocks.some(s => s.len === val)) return showToast("이미 존재하는 규격입니다.", true);
+            
+            currentRecalcStocks.push({ id: Date.now(), len: val, qty: 50, enabled: true });
+            currentRecalcStocks.sort((a, b) => a.len - b.len);
+            
+            renderRecalcStockUI();
+            input.value = '';
+        }
+
+        function updateRecalcStock(index, field, value) {
+            if(field === 'enabled') {
+                currentRecalcStocks[index].enabled = value;
+                renderRecalcStockUI();
+            } else if(field === 'len') {
+                let v = parseFloat(value);
+                if(isNaN(v) || v <= 0) v = 8;
+                currentRecalcStocks[index].len = v;
+            } else if(field === 'qty') {
+                let v = parseInt(value);
+                if(isNaN(v) || v < 0) v = 0;
+                currentRecalcStocks[index].qty = v;
+            }
+        }
+
+        function renderRecalcStockUI() {
+            const container = document.getElementById('recalcStockContainer');
+            container.innerHTML = '';
+            currentRecalcStocks.forEach((item, index) => {
+                const isChecked = item.enabled ? 'checked' : '';
+                const disableStr = item.enabled ? '' : 'disabled';
+                const styleClass = item.enabled ? 
+                    'w-full px-2 py-1.5 border border-slate-200 rounded text-xs font-black text-slate-700' : 
+                    'w-full px-2 py-1.5 border border-slate-200 rounded text-xs font-black bg-slate-100 text-slate-400';
+
+                const card = document.createElement('div');
+                card.className = `bg-white p-2 rounded-lg border border-slate-200 shadow-sm transition ${item.enabled?'':'opacity-60'}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="flex items-center space-x-1 cursor-pointer">
+                            <input type="checkbox" ${isChecked} onchange="updateRecalcStock(${index}, 'enabled', this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-3 h-3">
+                            <div class="flex items-end">
+                                <input type="number" value="${item.len}" step="0.1" onchange="updateRecalcStock(${index}, 'len', this.value)" class="w-12 text-center bg-transparent border-b border-slate-400 focus:border-indigo-600 outline-none text-[12px] font-extrabold text-indigo-900 mx-1 p-0">
+                                <span class="text-[10px] font-bold text-slate-600 mb-0.5">M</span>
+                            </div>
+                        </label>
+                    </div>
+                    <div>
+                        <input type="number" value="${item.qty}" min="0" onchange="updateRecalcStock(${index}, 'qty', this.value)" ${disableStr} class="${styleClass}" title="최대 가용량">
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function applyRecalc() {
+            let enabledStocks = [];
+            currentRecalcStocks.forEach(item => {
+                if (item.enabled && item.qty > 0 && item.len > 0) {
+                    enabledStocks.push({ length: Math.round(item.len * 1000), qty: item.qty });
+                }
+            });
+            if(enabledStocks.length === 0) return showToast("가용 자재가 최소 1본 이상 활성화되어야 합니다.", true);
+            
+            groupSpecificStocks[currentRecalcGroupKey] = JSON.parse(JSON.stringify(currentRecalcStocks));
+            runAlgorithmForGroup(currentRecalcGroupKey, enabledStocks);
+            
+            closeRecalcModal();
+            renderPDFStyleResults();
+            showToast(`해당 규격의 커팅 플랜이 성공적으로 재정리되었습니다.`);
+        }
+
+        // ==========================================
+        // 결과 렌더링 및 출력 (중량 및 로스율 표시)
+        // ==========================================
+        function renderPDFStyleResults() {
+            const masterContainer = document.getElementById('masterSummary');
+            const detailContainer = document.getElementById('resultContent');
+            masterContainer.innerHTML = ''; detailContainer.innerHTML = '';
+
+            let grandTotalLen = 0, grandTotalLoss = 0;
+            let groupKeys = Object.keys(globalResultData);
+
+            groupKeys.forEach(gk => {
+                globalResultData[gk].forEach(s => { grandTotalLen += (s.stockSize * s.stockQty); grandTotalLoss += (s.remain * s.stockQty); });
+            });
+
+            let grandRatioVal = grandTotalLen > 0 ? ((grandTotalLoss / grandTotalLen) * 100) : 0;
+            let grandRatio = grandRatioVal.toFixed(2);
+            // [요구사항 3 적용] 총 로스율 5% 초과시 적색(Red) 경고 처리
+            let grandRatioColor = grandRatioVal > 5.0 ? 'text-rose-500 font-black' : 'text-green-400 font-bold';
+
+            masterContainer.innerHTML = `
+                <div class="bg-slate-900 rounded-xl p-4 shadow-md flex justify-between items-center text-white">
+                    <div>
+                        <h3 class="text-lg font-black tracking-widest">[PROJECT] ${document.getElementById('projectName').value || '미입력'} CP LIST</h3>
+                    </div>
+                    <div class="flex gap-6 text-sm">
+                        <div>총 자재: <span class="font-bold text-indigo-300">${(grandTotalLen/1000).toFixed(1)}M</span></div>
+                        <div>총 로스: <span class="font-bold text-rose-300">${(grandTotalLoss/1000).toFixed(2)}M</span></div>
+                        <div>평균 로스율: <span class="${grandRatioColor}">${grandRatio}%</span></div>
+                    </div>
+                </div>
+            `;
+
+            let listCounter = 1;
+            
+            groupKeys.forEach(gk => {
+                let stocks = globalResultData[gk];
+                if (stocks.length === 0 && (!globalUnassignedData[gk] || globalUnassignedData[gk].length === 0)) return;
+
+                let [matl, prof] = gk.split('||');
+                let customBadge = groupSpecificStocks[gk] ? '<span class="ml-3 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-black border border-amber-300">⚠ 부분 수정 재계산 적용됨</span>' : '';
+
+                let reqStocksObj = {};
+                let groupTotalQty = 0;
+                let groupStockLenSum = 0;
+                let groupScrapSum = 0;
+                let groupNetLenSum = 0;
+
+                stocks.forEach(s => {
+                    reqStocksObj[s.stockSize] = (reqStocksObj[s.stockSize] || 0) + s.stockQty;
+                    groupTotalQty += s.stockQty;
+                    groupStockLenSum += (s.stockSize * s.stockQty);
+                    groupScrapSum += (s.remain * s.stockQty);
+                    s.groupedCuts.forEach(c => {
+                        groupNetLenSum += (c.length * c.qty * s.stockQty);
+                    });
+                });
+
+                // [요구사항 1 적용] 중량 및 로스율 산출
+                let unitWeight = getUnitWeight(prof);
+                let netWeight = (groupNetLenSum / 1000) * unitWeight;
+                let stockWeight = (groupStockLenSum / 1000) * unitWeight;
+                let avgLossVal = groupStockLenSum > 0 ? (groupScrapSum / groupStockLenSum * 100) : 0;
+                let avgLossRate = avgLossVal.toFixed(2);
+                
+                // [요구사항 3 적용] 평균 로스율 5% 초과시 적색(Red) 박스로 강조
+                let avgLossColor = avgLossVal > 5.0 ? 'text-rose-600 font-black bg-rose-100/70 px-1.5 py-0.5 rounded' : 'text-emerald-600 font-black';
+
+                let summaryLineHtml = `<div class="bg-indigo-50/70 px-4 py-2 border-b border-slate-300 flex flex-wrap gap-3 items-center text-xs">
+                    <span class="font-black text-indigo-900 mr-1">✅ 필요 원부재 수량:</span>`;
+                Object.keys(reqStocksObj).sort((a,b)=>b-a).forEach(sizeMm => {
+                    summaryLineHtml += `<span class="font-bold text-slate-700 bg-white px-2 py-1 rounded shadow-sm border border-slate-200">${sizeMm/1000}M <span class="text-rose-600 ml-1">${reqStocksObj[sizeMm]}본</span></span>`;
+                });
+                
+                summaryLineHtml += `<div class="ml-auto flex items-center gap-3 bg-slate-200 px-3 py-1.5 rounded">`;
+                if(unitWeight > 0) {
+                    summaryLineHtml += `<span class="font-bold text-slate-700">NET중량: <span class="text-indigo-700">${netWeight.toLocaleString(undefined, {maximumFractionDigits:1})} kg</span></span><span class="text-slate-400">|</span>`;
+                    summaryLineHtml += `<span class="font-bold text-slate-700">조합부재중량: <span class="text-indigo-700">${stockWeight.toLocaleString(undefined, {maximumFractionDigits:1})} kg</span></span><span class="text-slate-400">|</span>`;
+                }
+                summaryLineHtml += `<span class="font-bold text-slate-700">평균로스율: <span class="${avgLossColor}">${avgLossRate}%</span></span><span class="text-slate-400">|</span>`;
+                summaryLineHtml += `<span class="font-black text-slate-800">총합계: <span class="text-indigo-700">${groupTotalQty}본</span></span></div></div>`;
+
+                let tableHtml = `
+                <div class="mb-10 overflow-hidden bg-white shadow-sm border border-slate-300 rounded-lg">
+                    <div class="bg-indigo-100 px-4 py-2 border-b border-slate-300 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <span class="font-bold text-slate-800 text-sm">규격 그룹:</span>
+                            <span class="font-black text-indigo-900 text-base ml-2">${matl} / ${prof}</span>
+                            ${customBadge}
+                        </div>
+                        <button onclick="openRecalcModal('${gk}')" class="bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold py-1 px-3 rounded shadow-sm transition flex items-center gap-1 hide-on-print">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            부분 수정 / 재정리
+                        </button>
+                    </div>
+                    ${summaryLineHtml}
+                    <div class="overflow-x-auto">
+                    <table class="w-full cp-table whitespace-nowrap">
+                        <thead>
+                            <tr>
+                                <th width="3%">NO</th>
+                                <th width="8%">MATL</th>
+                                <th width="15%">SIZE</th>
+                                <th width="3%">UNIT</th>
+                                <th width="6%">LENG</th>
+                                <th width="4%">QTY</th>
+                                <th width="6%">COMBI</th>
+                                <th width="6%">SCRAP</th>
+                                <th width="6%">LOSS</th>
+                                <th width="20%">LENG x QTY</th>
+                                <th width="23%">TOTAL REMARK</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                stocks.forEach((s) => {
+                    let lossVal = (s.remain / s.stockSize) * 100;
+                    let lossPct = lossVal.toFixed(2) + "%";
+                    // [요구사항 3 적용] 개별 조합의 로스율이 5% 초과시 표 내부에서도 붉은색 배경/글자로 경고
+                    let lossTdClass = lossVal > 5.0 ? "text-rose-600 font-black bg-rose-50" : "";
+                    
+                    let cutDetailStrs = s.groupedCuts.map(c => `${c.length.toLocaleString()} x ${c.qty}`);
+                    let markDetailStrs = s.groupedCuts.map(c => `${c.mark || '-'}`);
+
+                    let rowSpan = s.groupedCuts.length;
+
+                    for(let i=0; i<rowSpan; i++) {
+                        tableHtml += `<tr>`;
+                        if(i === 0) {
+                            tableHtml += `<td rowspan="${rowSpan}">${listCounter++}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}">${matl}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}" class="font-bold">${prof}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}">0</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}">${s.stockSize}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}" class="text-rose-600 font-bold">${s.stockQty}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}">${s.combi}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}">${s.remain}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}" class="${lossTdClass}">${lossPct}</td>`;
+                        }
+                        tableHtml += `<td class="text-left pl-3">${cutDetailStrs[i]}</td>`;
+                        tableHtml += `<td class="text-left pl-3 text-indigo-800">${markDetailStrs[i]}</td>`;
+                        tableHtml += `</tr>`;
+                    }
+                });
+                
+                tableHtml += `</tbody></table></div></div>`;
+                
+                if (globalUnassignedData[gk] && globalUnassignedData[gk].length > 0) {
+                    let uHtml = globalUnassignedData[gk].map(c => `<span class="inline-block bg-white text-rose-700 text-xs font-bold px-2 py-1 border border-rose-200 rounded mr-1 mb-1">[${c.mark||'-'}] ${c.original}mm</span>`).join('');
+                    tableHtml += `<div class="bg-rose-50 border border-rose-200 rounded-lg p-3 mb-6"><p class="text-xs font-black text-rose-800 mb-1">⚠ 재고 수량 초과로 미할당된 부재 목록</p>${uHtml}</div>`;
+                }
+
+                detailContainer.innerHTML += tableHtml;
+            });
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function exportExcel() {
+            let groupKeys = Object.keys(globalResultData);
+            if (groupKeys.length === 0) return showToast("출력할 결과가 없습니다.", true);
+            
+            let wb = XLSX.utils.book_new(), wsData = [];
+            
+            wsData.push(["CUTTING PLAN LIST"]);
+            wsData.push([`[PROJECT] ${document.getElementById('projectName').value || '미입력'}`]);
+            wsData.push([]);
+            
+            let listCounter = 1;
+
+            groupKeys.forEach(gk => {
+                let stocks = globalResultData[gk];
+                let [matl, prof] = gk.split('||');
+
+                let reqStocksObj = {};
+                let groupTotalQty = 0;
+                let groupStockLenSum = 0;
+                let groupScrapSum = 0;
+                let groupNetLenSum = 0;
+
+                stocks.forEach(s => {
+                    reqStocksObj[s.stockSize] = (reqStocksObj[s.stockSize] || 0) + s.stockQty;
+                    groupTotalQty += s.stockQty;
+                    groupStockLenSum += (s.stockSize * s.stockQty);
+                    groupScrapSum += (s.remain * s.stockQty);
+                    s.groupedCuts.forEach(c => {
+                        groupNetLenSum += (c.length * c.qty * s.stockQty);
+                    });
+                });
+
+                let customMark = groupSpecificStocks[gk] ? " (⚠ 부분 수정 적용됨)" : "";
+                wsData.push([`■ 규격 그룹: ${matl} / ${prof}${customMark}`]);
+                
+                let summaryRow = ["✅ [필요 원부재 요약]"];
+                Object.keys(reqStocksObj).sort((a,b)=>b-a).forEach(sizeMm => {
+                    summaryRow.push(`${sizeMm/1000}M: ${reqStocksObj[sizeMm]}본`);
+                });
+                summaryRow.push(`(총합계: ${groupTotalQty}본)`);
+
+                // 엑셀 내보내기 시에도 중량 및 로스율 함께 출력
+                let unitWeight = getUnitWeight(prof);
+                let avgLossVal = groupStockLenSum > 0 ? (groupScrapSum / groupStockLenSum * 100) : 0;
+                if (unitWeight > 0) {
+                    let netWeight = (groupNetLenSum / 1000) * unitWeight;
+                    let stockWeight = (groupStockLenSum / 1000) * unitWeight;
+                    summaryRow.push(`NET중량: ${netWeight.toLocaleString(undefined, {maximumFractionDigits:1})} kg`);
+                    summaryRow.push(`조합부재중량: ${stockWeight.toLocaleString(undefined, {maximumFractionDigits:1})} kg`);
+                }
+                summaryRow.push(`평균로스율: ${avgLossVal.toFixed(2)}%`);
+                
+                wsData.push(summaryRow);
+                wsData.push(["NO", "MATL", "SIZE", "UNIT", "LENG", "QTY", "COMBI", "SCRAP", "LOSS", "LENG x QTY", "TOTAL REMARK"]);
+
+                stocks.forEach((s) => {
+                    let lossPct = ((s.remain / s.stockSize) * 100).toFixed(2) + "%";
+                    let rowSpan = s.groupedCuts.length;
+                    
+                    for(let i=0; i<rowSpan; i++) {
+                        let row = [];
+                        if (i === 0) {
+                            row = [listCounter++, matl, prof, 0, s.stockSize, s.stockQty, s.combi, s.remain, lossPct];
+                        } else {
+                            row = ["", "", "", "", "", "", "", "", ""];
+                        }
+                        row.push(`${s.groupedCuts[i].length.toLocaleString()} x ${s.groupedCuts[i].qty}`);
+                        row.push(`${s.groupedCuts[i].mark || '-'}`);
+                        wsData.push(row);
+                    }
+                });
+                wsData.push([]); 
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            // 엑셀 열 너비 조정 최적화
+            ws['!cols'] = [{wch:5},{wch:10},{wch:20},{wch:5},{wch:10},{wch:5},{wch:10},{wch:10},{wch:10},{wch:20},{wch:25}];
+            XLSX.utils.book_append_sheet(wb, ws, "CP_LIST");
+            XLSX.writeFile(wb, `CP_LIST_${document.getElementById('projectName').value||'Export'}.xlsx`);
+            showToast("CP LIST 엑셀이 다운로드되었습니다.");
+        }
+    </script>
+</body>
+</html>
