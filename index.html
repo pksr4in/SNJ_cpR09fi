@@ -24,6 +24,20 @@
         .cp-table tr:nth-child(even) { background-color: #f8fafc; }
         .cp-table tr:hover { background-color: #e2e8f0; }
 
+        /* 입력 셀 (수기 수정 가능) 스타일 */
+        input.no-spin::-webkit-outer-spin-button,
+        input.no-spin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input.no-spin[type=number] { -moz-appearance: textfield; }
+        
+        .editable-cell {
+            width: 100%; text-align: center; border: 1px solid #cbd5e1;
+            border-radius: 4px; padding: 4px 2px; font-size: 11px;
+            font-weight: 900; outline: none; background-color: #fff;
+            transition: all 0.2s; color: #0f172a;
+        }
+        .editable-cell:focus { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        .editable-qty { color: #e11d48; }
+
         /* 인쇄 및 PDF 저장 전용 스타일 */
         @media print {
             body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -33,6 +47,10 @@
             @page { size: A4 portrait; margin: 10mm; }
             .cp-table th { background-color: #f1f5f9 !important; }
             .cp-table tr:nth-child(even) { background-color: #f8fafc !important; }
+            .editable-cell {
+                border: none !important; background: transparent !important;
+                box-shadow: none !important; padding: 0 !important; margin: 0 !important;
+            }
         }
     </style>
 </head>
@@ -72,6 +90,10 @@
                     <span class="w-1.5 h-5 bg-indigo-600 rounded-full"></span>
                     1. 공사 개요 입력
                 </h2>
+                <button type="button" onclick="resetAllExceptProjectInfo()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold px-3 py-1.5 rounded-lg transition text-xs flex items-center gap-1 border border-rose-100 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    전체 초기화
+                </button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -219,8 +241,8 @@
             <div class="flex flex-col md:flex-row gap-6 mb-4">
                 <div class="w-full md:w-3/4">
                     <div class="flex items-center gap-2 mb-3">
-                        <label class="text-sm font-bold text-slate-600 whitespace-nowrap">새 정척 추가 (M)</label>
-                        <input type="number" id="newStockLength" step="0.1" class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm" placeholder="예: 15">
+                        <label class="text-sm font-bold text-slate-600 whitespace-nowrap">치수 추가 (M)</label>
+                        <input type="number" id="newStockLength" step="0.01" class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm" placeholder="예: 15">
                         <button type="button" onclick="addNewStock()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded-lg transition text-sm flex items-center gap-1 shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                             추가
@@ -253,6 +275,11 @@
                     <button type="button" onclick="document.getElementById('excelInput').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 px-4 rounded-xl transition flex items-center shadow-sm">
                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                         엑셀 자동 분석 가져오기
+                    </button>
+                    <input type="file" id="cpExcelInput" accept=".xlsx, .xls" class="hidden" onchange="importCPEditableExcel(event)">
+                    <button type="button" onclick="document.getElementById('cpExcelInput').click()" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold py-2 px-4 rounded-xl transition flex items-center shadow-sm">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                        저장된 CP LIST 불러오기
                     </button>
                     <button type="button" onclick="resetCutList()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-2 px-4 rounded-xl transition flex items-center border border-slate-200">
                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -298,6 +325,7 @@
                             5. CUTTING PLAN LIST (최적화 결과 리포트)
                         </h2>
                         <p class="text-xs text-slate-500 font-bold mt-1 ml-4">※ 각 규격별로 "부분 수정/재정리" 기능을 이용해 개별적인 커팅 플랜 조율이 가능합니다.</p>
+                        <p class="text-xs text-indigo-600 font-bold mt-1 ml-4">※ 표 안의 <span class="bg-indigo-100 px-1 rounded">LENG</span> 과 <span class="bg-indigo-100 px-1 rounded">QTY</span> 항목은 직접 숫자를 입력해 수기 수정이 가능합니다.</p>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto hide-on-print">
                         <button onclick="window.print()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-sm py-3 px-6 rounded-xl transition flex items-center justify-center shadow-md">
@@ -334,8 +362,8 @@
             </div>
             <div class="p-6 overflow-y-auto flex-grow bg-slate-100/50">
                 <div class="mb-4 flex items-center gap-2">
-                    <label class="text-sm font-bold text-slate-600 whitespace-nowrap">새 정척 추가 (M)</label>
-                    <input type="number" id="recalcNewStockLength" step="0.1" class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm" placeholder="예: 15">
+                    <label class="text-sm font-bold text-slate-600 whitespace-nowrap">치수 추가 (M)</label>
+                    <input type="number" id="recalcNewStockLength" step="0.01" class="w-24 px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 text-sm" placeholder="예: 15">
                     <button type="button" onclick="addRecalcStock()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded-lg transition text-sm flex items-center gap-1 shadow-sm">
                         추가
                     </button>
@@ -367,27 +395,6 @@
     </footer>
 
     <script>
-        // --- 강력한 보안 모듈 --- (필요 시 주석 처리하여 개발 모드로 사용하세요)
-        /*
-        document.addEventListener('copy', function(e) {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault(); showToast("저작권 보호를 위해 복사가 차단되었습니다.", true);
-            }
-        });
-        document.addEventListener('cut', function(e) {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); }
-        });
-        document.addEventListener('selectstart', function(e) {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); }
-        });
-        document.addEventListener('keydown', function(e) {
-            if (e.keyCode === 123) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); return false; }
-            if (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) { e.preventDefault(); return false; }
-        });
-        // setInterval(function() { (function() { return false; } ['constructor']('debugger') ['call']()); }, 500); // 디버거 무한 루프
-        */
-
         // 글로벌 상태 변수
         const DEFAULT_STOCK_LENGTHS = [8, 9, 10, 11, 12, 13, 14]; 
         let stockItems = []; 
@@ -432,19 +439,14 @@
             }, 3500);
         }
 
-        // H형강 규격(Profile) 텍스트를 분석하여 단위 중량(kg/m)을 근사 계산하는 함수 (최적화)
         function getUnitWeight(profile) {
             if(!profile) return 0;
-            // "H200*200*8*12" 또는 "H-200X200X8X12" 등 다양한 포맷에서 숫자만 추출
-            // 알파벳, 한글, 특수기호를 모두 공백으로 치환 후 숫자 배열 생성
             let clean = profile.toUpperCase().replace(/[A-Z가-힣]/g, ' ').replace(/[^0-9.\s]/g, ' ').trim();
             let parts = clean.split(/\s+/).map(Number).filter(n => !isNaN(n) && n > 0);
             
             if (parts.length >= 4) {
                 let A = parts[0]; let B = parts[1]; let t1 = parts[2]; let t2 = parts[3];
-                // 단면적(mm2) = 웹 면적 + 2 * 플랜지 면적
                 let area = t1 * (A - 2 * t2) + 2 * B * t2;
-                // 강철 비중(7.85) 적용 및 코너 R(필렛) 보정 계수(1.025) 적용
                 return (area * 7.85 / 1000) * 1.025; 
             }
             return 0;
@@ -492,7 +494,7 @@
                         <label class="flex items-center space-x-1 cursor-pointer">
                             <input type="checkbox" ${isChecked} onchange="updateStockItem(${index}, 'enabled', this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-3 h-3">
                             <div class="flex items-end">
-                                <input type="number" value="${item.len}" step="0.1" onchange="updateStockItem(${index}, 'len', this.value)" class="w-12 text-center bg-transparent border-b border-slate-400 focus:border-indigo-600 outline-none text-[12px] font-extrabold text-indigo-900 mx-1 p-0">
+                                <input type="number" value="${item.len}" step="0.01" onchange="updateStockItem(${index}, 'len', this.value)" class="w-12 text-center bg-transparent border-b border-slate-400 focus:border-indigo-600 outline-none text-[12px] font-extrabold text-indigo-900 mx-1 p-0">
                                 <span class="text-[10px] font-bold text-slate-600 mb-0.5">M</span>
                             </div>
                         </label>
@@ -618,7 +620,6 @@
                     let matlCol = headerRow.indexOf('MATL');
                     let qtyCol = headerRow.indexOf('QTY');
 
-                    // 컬럼 매핑 보완
                     if (lenCol === -1 || qtyCol === -1 || profCol === -1) {
                         headerRow.forEach((val, c) => {
                             if (profCol === -1 && ['규격','사이즈','형강','PROFILE','SIZE'].some(k=>val.includes(k))) profCol = c;
@@ -648,7 +649,6 @@
                         let rawLen = String(row[lenCol] || '').replace(/,/g, '').replace(/[^\d.]/g, '');
                         let lengthVal = parseFloat(rawLen);
                         
-                        // M 단위를 mm 로 치환 방어 (통상 25M 를 넘지 않는다고 가정)
                         if (!isNaN(lengthVal) && lengthVal > 0 && lengthVal < 25) lengthVal = Math.round(lengthVal * 1000); 
                         else lengthVal = Math.round(lengthVal);
 
@@ -671,6 +671,162 @@
                     console.error(error);
                 }
                 event.target.value = ''; 
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function importCPEditableExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const ws = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
+
+                    if(!jsonData || jsonData.length < 5 || String(jsonData[0][0]).trim() !== "CUTTING PLAN LIST") {
+                        return showToast("올바른 CP LIST 엑셀 파일이 아닙니다.", true);
+                    }
+
+                    // 글로벌 변수 초기화
+                    globalGroupedCuts = {};
+                    groupSpecificStocks = {};
+                    globalResultData = {};
+                    globalUnassignedData = {};
+
+                    // 공사명 복원
+                    let projNameRaw = String(jsonData[1][0] || "");
+                    if(projNameRaw.includes("[PROJECT]")) {
+                        document.getElementById('projectName').value = projNameRaw.replace("[PROJECT]", "").trim();
+                    }
+
+                    let currentGroupKey = null;
+                    let currentStockObj = null;
+
+                    for (let i = 0; i < jsonData.length; i++) {
+                        let row = jsonData[i];
+                        if (!row || !row.length) continue;
+                        let col0 = String(row[0]).trim();
+
+                        if (col0.startsWith("■ 규격 그룹:")) {
+                            if (currentGroupKey && currentStockObj) {
+                                globalResultData[currentGroupKey].push(currentStockObj);
+                                currentStockObj = null;
+                            }
+
+                            let groupStr = col0.replace("■ 규격 그룹:", "").replace("(⚠ 부분 수정 적용됨)", "").trim();
+                            let parts = groupStr.split("/");
+                            if (parts.length >= 2) {
+                                currentGroupKey = parts[0].trim() + "||" + parts[1].trim();
+                                globalResultData[currentGroupKey] = [];
+                                if(col0.includes("부분 수정 적용됨")) {
+                                    groupSpecificStocks[currentGroupKey] = [];
+                                }
+                            }
+                            continue;
+                        }
+
+                        let isNo = !isNaN(parseInt(col0)) && col0 !== "";
+                        
+                        if (currentGroupKey && isNo) {
+                            if (currentStockObj) {
+                                globalResultData[currentGroupKey].push(currentStockObj);
+                            }
+                            
+                            let stockSize = parseFloat(String(row[4]).replace(/,/g,''));
+                            let stockQty = parseInt(String(row[5]).replace(/,/g,''));
+                            let combi = parseFloat(String(row[6]).replace(/,/g,''));
+                            let remain = parseFloat(String(row[7]).replace(/,/g,''));
+
+                            currentStockObj = {
+                                sig: "imported_" + i, 
+                                stockSize: stockSize,
+                                remain: remain,
+                                combi: combi,
+                                stockQty: stockQty,
+                                groupedCuts: []
+                            };
+
+                            let cutStr = String(row[9]||"");
+                            let markStr = String(row[10]||"");
+                            if (cutStr && cutStr.includes("x")) {
+                                let cparts = cutStr.split("x");
+                                let clen = parseFloat(cparts[0].replace(/,/g,''));
+                                let cqty = parseInt(cparts[1].replace(/,/g,''));
+                                currentStockObj.groupedCuts.push({ length: clen, mark: markStr.trim(), qty: cqty });
+                            }
+                        } else if (currentGroupKey && currentStockObj && col0 === "" && String(row[9]).trim() !== "") {
+                            let cutStr = String(row[9]||"");
+                            let markStr = String(row[10]||"");
+                            if (cutStr && cutStr.includes("x")) {
+                                let cparts = cutStr.split("x");
+                                let clen = parseFloat(cparts[0].replace(/,/g,''));
+                                let cqty = parseInt(cparts[1].replace(/,/g,''));
+                                currentStockObj.groupedCuts.push({ length: clen, mark: markStr.trim(), qty: cqty });
+                            }
+                        }
+                    }
+                    if (currentGroupKey && currentStockObj) {
+                        globalResultData[currentGroupKey].push(currentStockObj);
+                    }
+
+                    // 읽어온 데이터로 globalGroupedCuts (원본 절단 데이터) 복원
+                    for (let gk in globalResultData) {
+                        globalGroupedCuts[gk] = [];
+                        globalResultData[gk].forEach(stock => {
+                            stock.groupedCuts.forEach(cut => {
+                                for(let q=0; q<(cut.qty * stock.stockQty); q++){
+                                     globalGroupedCuts[gk].push({
+                                         original: cut.length,
+                                         mark: cut.mark === '-' ? '' : cut.mark
+                                     });
+                                }
+                            });
+                        });
+                    }
+
+                    // 입력 폼 (Section 4) 재구성
+                    let aggregatedInput = [];
+                    for (let gk in globalGroupedCuts) {
+                         let [matl, prof] = gk.split("||");
+                         let counts = {};
+                         globalGroupedCuts[gk].forEach(c => {
+                             let key = c.original + "_|_" + c.mark;
+                             if(!counts[key]) counts[key] = { len: c.original, mark: c.mark, qty: 0 };
+                             counts[key].qty++;
+                         });
+                         for(let k in counts) {
+                             aggregatedInput.push({
+                                 mark: counts[k].mark,
+                                 prof: prof,
+                                 length: counts[k].len,
+                                 matl: matl,
+                                 qty: counts[k].qty
+                             });
+                         }
+                    }
+                    document.getElementById('cutListContainer').innerHTML = '';
+                    if(aggregatedInput.length === 0) {
+                        addRow(); addRow(); addRow();
+                    } else {
+                        aggregatedInput.forEach(i => {
+                            addRow(i.mark, i.prof, i.length, i.matl, i.qty);
+                        });
+                    }
+
+                    // 결과 렌더링
+                    document.getElementById('resultSection').classList.remove('hidden');
+                    renderPDFStyleResults();
+                    showToast("저장된 CP LIST를 불러왔습니다. 내용이 복원되었습니다.");
+
+                } catch (err) {
+                    showToast("파일을 읽거나 분석하는 중 오류가 발생했습니다.", true);
+                    console.error(err);
+                }
+                event.target.value = '';
             };
             reader.readAsArrayBuffer(file);
         }
@@ -759,18 +915,15 @@
                 
                 if (candidates.length === 0) break;
 
-                // [요구사항 2 적용] 스크랩 1M 이하 유지 및 길이가 긴 원부재 적극 활용 알고리즘
                 candidates.sort((a, b) => {
-                    let aGood = a.waste <= 1000; // 스크랩 1000mm(1M) 이하 여부
+                    let aGood = a.waste <= 1000;
                     let bGood = b.waste <= 1000;
                     if (aGood && !bGood) return -1;
                     if (!aGood && bGood) return 1;
                     if (aGood && bGood) {
-                        // 둘 다 1M 이하인 훌륭한 조합이라면, 더 긴 정척 자재를 우선적으로 소모 (장축 우선)
                         if (b.stockLen !== a.stockLen) return b.stockLen - a.stockLen; 
-                        return a.waste - b.waste; // 같은 길이라면 낭비가 더 적은 쪽
+                        return a.waste - b.waste;
                     }
-                    // 둘 다 1M를 초과할 경우, 순수하게 손실률(Loss Rate)이 낮은 것을 채택
                     return a.lossRate - b.lossRate;
                 });
 
@@ -801,7 +954,6 @@
             }
         }
 
-        // DP 기반 1D Bin Packing
         function findBestKnapsackCombo(cuts, capacity) {
             let n = cuts.length;
             let dp = new Int32Array(capacity + 1);
@@ -850,8 +1002,30 @@
         }
 
         // ==========================================
-        // 팝업 모달 기반: 부분 수정 및 재정리 기능
+        // 결과표 내 LENG 및 QTY 개별 수기 수정 처리
         // ==========================================
+        function updateResultRow(groupKey, rowIdx, field, value) {
+            let item = globalResultData[groupKey][rowIdx];
+            if (!item) return;
+            
+            let numVal = parseFloat(value);
+            if(isNaN(numVal) || numVal < 0) {
+                showToast("유효한 숫자를 0 이상으로 입력하세요.", true);
+                renderPDFStyleResults(); // 되돌리기
+                return;
+            }
+
+            if (field === 'stockSize') {
+                item.stockSize = numVal;
+                item.remain = item.stockSize - item.combi; // 로스 재계산
+            } else if (field === 'stockQty') {
+                item.stockQty = Math.round(numVal); // 수량은 정수형
+            }
+            
+            // 변경된 데이터 기반으로 전체 다시 그리기 (요약 포함 갱신됨)
+            renderPDFStyleResults(); 
+        }
+
         function openRecalcModal(gk) {
             currentRecalcGroupKey = gk;
             document.getElementById('recalcGroupName').innerText = gk.replace('||', ' / ');
@@ -918,7 +1092,7 @@
                         <label class="flex items-center space-x-1 cursor-pointer">
                             <input type="checkbox" ${isChecked} onchange="updateRecalcStock(${index}, 'enabled', this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-3 h-3">
                             <div class="flex items-end">
-                                <input type="number" value="${item.len}" step="0.1" onchange="updateRecalcStock(${index}, 'len', this.value)" class="w-12 text-center bg-transparent border-b border-slate-400 focus:border-indigo-600 outline-none text-[12px] font-extrabold text-indigo-900 mx-1 p-0">
+                                <input type="number" value="${item.len}" step="0.01" onchange="updateRecalcStock(${index}, 'len', this.value)" class="w-12 text-center bg-transparent border-b border-slate-400 focus:border-indigo-600 outline-none text-[12px] font-extrabold text-indigo-900 mx-1 p-0">
                                 <span class="text-[10px] font-bold text-slate-600 mb-0.5">M</span>
                             </div>
                         </label>
@@ -948,9 +1122,6 @@
             showToast(`해당 규격의 커팅 플랜이 성공적으로 재정리되었습니다.`);
         }
 
-        // ==========================================
-        // 결과 렌더링 및 출력 (중량 및 로스율 표시)
-        // ==========================================
         function renderPDFStyleResults() {
             const masterContainer = document.getElementById('masterSummary');
             const detailContainer = document.getElementById('resultContent');
@@ -965,7 +1136,6 @@
 
             let grandRatioVal = grandTotalLen > 0 ? ((grandTotalLoss / grandTotalLen) * 100) : 0;
             let grandRatio = grandRatioVal.toFixed(2);
-            // [요구사항 3 적용] 총 로스율 5% 초과시 적색(Red) 경고 처리
             let grandRatioColor = grandRatioVal > 5.0 ? 'text-rose-500 font-black' : 'text-green-400 font-bold';
 
             masterContainer.innerHTML = `
@@ -990,6 +1160,16 @@
                 let [matl, prof] = gk.split('||');
                 let customBadge = groupSpecificStocks[gk] ? '<span class="ml-3 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-black border border-amber-300">⚠ 부분 수정 재계산 적용됨</span>' : '';
 
+                // 요구사항 1 & 2: 부재 치수별 산출 요약 집계를 위한 객체 생성
+                let reqSummary = {};
+                if (globalGroupedCuts[gk]) {
+                    globalGroupedCuts[gk].forEach(c => {
+                        let len = c.original;
+                        if(!reqSummary[len]) reqSummary[len] = { req: 0, used: 0 };
+                        reqSummary[len].req++;
+                    });
+                }
+
                 let reqStocksObj = {};
                 let groupTotalQty = 0;
                 let groupStockLenSum = 0;
@@ -1001,21 +1181,25 @@
                     groupTotalQty += s.stockQty;
                     groupStockLenSum += (s.stockSize * s.stockQty);
                     groupScrapSum += (s.remain * s.stockQty);
+                    
+                    // 각 조합 내에서 소모된 부재 수량 파악
                     s.groupedCuts.forEach(c => {
                         groupNetLenSum += (c.length * c.qty * s.stockQty);
+                        if (reqSummary[c.length]) {
+                            reqSummary[c.length].used += (c.qty * s.stockQty);
+                        }
                     });
                 });
 
-                // [요구사항 1 적용] 중량 및 로스율 산출
                 let unitWeight = getUnitWeight(prof);
                 let netWeight = (groupNetLenSum / 1000) * unitWeight;
                 let stockWeight = (groupStockLenSum / 1000) * unitWeight;
                 let avgLossVal = groupStockLenSum > 0 ? (groupScrapSum / groupStockLenSum * 100) : 0;
                 let avgLossRate = avgLossVal.toFixed(2);
                 
-                // [요구사항 3 적용] 평균 로스율 5% 초과시 적색(Red) 박스로 강조
                 let avgLossColor = avgLossVal > 5.0 ? 'text-rose-600 font-black bg-rose-100/70 px-1.5 py-0.5 rounded' : 'text-emerald-600 font-black';
 
+                // 상단 요약 HTML (필요 원부재)
                 let summaryLineHtml = `<div class="bg-indigo-50/70 px-4 py-2 border-b border-slate-300 flex flex-wrap gap-3 items-center text-xs">
                     <span class="font-black text-indigo-900 mr-1">✅ 필요 원부재 수량:</span>`;
                 Object.keys(reqStocksObj).sort((a,b)=>b-a).forEach(sizeMm => {
@@ -1029,6 +1213,31 @@
                 }
                 summaryLineHtml += `<span class="font-bold text-slate-700">평균로스율: <span class="${avgLossColor}">${avgLossRate}%</span></span><span class="text-slate-400">|</span>`;
                 summaryLineHtml += `<span class="font-black text-slate-800">총합계: <span class="text-indigo-700">${groupTotalQty}본</span></span></div></div>`;
+
+                // [요구사항 1, 2] 요청/조합/잔여 요약 패널 HTML 생성
+                let summaryHtmlDetail = `<div class="bg-slate-50 px-4 py-3 border-b border-slate-300">
+                    <div class="text-[11px] font-black text-slate-700 mb-2 flex items-center gap-1">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        [요청 / 조합 현황] 치수별 최초 요청 수량 대비 조합 완료 및 잔여 수량 (수기 수정 실시간 반영)
+                    </div>
+                    <div class="flex flex-wrap gap-2">`;
+                
+                Object.keys(reqSummary).sort((a,b)=>b-a).forEach(len => {
+                    let r = reqSummary[len];
+                    let remain = r.req - r.used; // 원본 요청 수량 - 실제 배정된(또는 수기수정된) 수량
+                    let colorClass = remain > 0 ? 'text-rose-700 bg-rose-100' : (remain < 0 ? 'text-amber-700 bg-amber-100' : 'text-emerald-700 bg-emerald-100');
+                    let remainText = remain < 0 ? `초과 ${Math.abs(remain)}` : `잔여 ${remain}`;
+
+                    summaryHtmlDetail += `<span class="inline-flex items-center border border-slate-200 text-[11px] rounded shadow-sm overflow-hidden bg-white">
+                        <span class="font-black text-slate-800 bg-slate-100 px-2 py-1 border-r border-slate-200">${len}mm</span>
+                        <span class="text-slate-600 px-2 py-1">요청 ${r.req}</span>
+                        <span class="text-slate-300">|</span>
+                        <span class="text-indigo-600 font-bold px-2 py-1">조합 ${r.used}</span>
+                        <span class="text-slate-300">|</span>
+                        <span class="font-black px-2 py-1 ${colorClass}">${remainText}</span>
+                    </span>`;
+                });
+                summaryHtmlDetail += `</div></div>`;
 
                 let tableHtml = `
                 <div class="mb-10 overflow-hidden bg-white shadow-sm border border-slate-300 rounded-lg">
@@ -1044,6 +1253,7 @@
                         </button>
                     </div>
                     ${summaryLineHtml}
+                    ${summaryHtmlDetail}
                     <div class="overflow-x-auto">
                     <table class="w-full cp-table whitespace-nowrap">
                         <thead>
@@ -1052,23 +1262,28 @@
                                 <th width="8%">MATL</th>
                                 <th width="15%">SIZE</th>
                                 <th width="3%">UNIT</th>
-                                <th width="6%">LENG</th>
-                                <th width="4%">QTY</th>
+                                <th width="8%" class="bg-indigo-50">LENG (입력)</th>
+                                <th width="6%" class="bg-indigo-50">QTY (입력)</th>
                                 <th width="6%">COMBI</th>
                                 <th width="6%">SCRAP</th>
                                 <th width="6%">LOSS</th>
                                 <th width="20%">LENG x QTY</th>
-                                <th width="23%">TOTAL REMARK</th>
+                                <th width="19%">TOTAL REMARK</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
 
-                stocks.forEach((s) => {
+                stocks.forEach((s, idx) => {
                     let lossVal = (s.remain / s.stockSize) * 100;
                     let lossPct = lossVal.toFixed(2) + "%";
-                    // [요구사항 3 적용] 개별 조합의 로스율이 5% 초과시 표 내부에서도 붉은색 배경/글자로 경고
                     let lossTdClass = lossVal > 5.0 ? "text-rose-600 font-black bg-rose-50" : "";
+                    
+                    // 수기 수정으로 길이가 짧아져서 오류가 발생한 경우 표시
+                    if (s.remain < 0) {
+                        lossTdClass = "text-red-700 font-black bg-red-100";
+                        lossPct = "오류(짧음)";
+                    }
                     
                     let cutDetailStrs = s.groupedCuts.map(c => `${c.length.toLocaleString()} x ${c.qty}`);
                     let markDetailStrs = s.groupedCuts.map(c => `${c.mark || '-'}`);
@@ -1082,10 +1297,17 @@
                             tableHtml += `<td rowspan="${rowSpan}">${matl}</td>`;
                             tableHtml += `<td rowspan="${rowSpan}" class="font-bold">${prof}</td>`;
                             tableHtml += `<td rowspan="${rowSpan}">0</td>`;
-                            tableHtml += `<td rowspan="${rowSpan}">${s.stockSize}</td>`;
-                            tableHtml += `<td rowspan="${rowSpan}" class="text-rose-600 font-bold">${s.stockQty}</td>`;
+                            
+                            // [요구사항 3] LENG과 QTY를 Input 박스로 변경하여 수기 수정 가능하도록 함
+                            tableHtml += `<td rowspan="${rowSpan}" class="p-1.5 bg-indigo-50/20">
+                                <input type="number" class="editable-cell no-spin" value="${s.stockSize}" onchange="updateResultRow('${gk}', ${idx}, 'stockSize', this.value)" title="길이 수기 수정 가능">
+                            </td>`;
+                            tableHtml += `<td rowspan="${rowSpan}" class="p-1.5 bg-indigo-50/20">
+                                <input type="number" class="editable-cell editable-qty no-spin" value="${s.stockQty}" onchange="updateResultRow('${gk}', ${idx}, 'stockQty', this.value)" title="수량 수기 수정 가능">
+                            </td>`;
+                            
                             tableHtml += `<td rowspan="${rowSpan}">${s.combi}</td>`;
-                            tableHtml += `<td rowspan="${rowSpan}">${s.remain}</td>`;
+                            tableHtml += `<td rowspan="${rowSpan}" class="${s.remain < 0 ? 'text-red-600 font-black' : ''}">${s.remain}</td>`;
                             tableHtml += `<td rowspan="${rowSpan}" class="${lossTdClass}">${lossPct}</td>`;
                         }
                         tableHtml += `<td class="text-left pl-3">${cutDetailStrs[i]}</td>`;
@@ -1122,6 +1344,15 @@
                 let stocks = globalResultData[gk];
                 let [matl, prof] = gk.split('||');
 
+                let reqSummary = {};
+                if (globalGroupedCuts[gk]) {
+                    globalGroupedCuts[gk].forEach(c => {
+                        let len = c.original;
+                        if(!reqSummary[len]) reqSummary[len] = { req: 0, used: 0 };
+                        reqSummary[len].req++;
+                    });
+                }
+
                 let reqStocksObj = {};
                 let groupTotalQty = 0;
                 let groupStockLenSum = 0;
@@ -1133,8 +1364,12 @@
                     groupTotalQty += s.stockQty;
                     groupStockLenSum += (s.stockSize * s.stockQty);
                     groupScrapSum += (s.remain * s.stockQty);
+                    
                     s.groupedCuts.forEach(c => {
                         groupNetLenSum += (c.length * c.qty * s.stockQty);
+                        if (reqSummary[c.length]) {
+                            reqSummary[c.length].used += (c.qty * s.stockQty);
+                        }
                     });
                 });
 
@@ -1147,7 +1382,6 @@
                 });
                 summaryRow.push(`(총합계: ${groupTotalQty}본)`);
 
-                // 엑셀 내보내기 시에도 중량 및 로스율 함께 출력
                 let unitWeight = getUnitWeight(prof);
                 let avgLossVal = groupStockLenSum > 0 ? (groupScrapSum / groupStockLenSum * 100) : 0;
                 if (unitWeight > 0) {
@@ -1157,12 +1391,22 @@
                     summaryRow.push(`조합부재중량: ${stockWeight.toLocaleString(undefined, {maximumFractionDigits:1})} kg`);
                 }
                 summaryRow.push(`평균로스율: ${avgLossVal.toFixed(2)}%`);
-                
                 wsData.push(summaryRow);
+
+                // 엑셀 출력 시 요청/조합 현황도 텍스트로 추가
+                let summaryRow2 = ["✅ [치수별 산출 요약]"];
+                Object.keys(reqSummary).sort((a,b)=>b-a).forEach(len => {
+                    let r = reqSummary[len];
+                    let remain = r.req - r.used;
+                    summaryRow2.push(`${len}mm: 요청${r.req} / 조합${r.used} / 잔여${remain}`);
+                });
+                wsData.push(summaryRow2);
+
                 wsData.push(["NO", "MATL", "SIZE", "UNIT", "LENG", "QTY", "COMBI", "SCRAP", "LOSS", "LENG x QTY", "TOTAL REMARK"]);
 
                 stocks.forEach((s) => {
                     let lossPct = ((s.remain / s.stockSize) * 100).toFixed(2) + "%";
+                    if (s.remain < 0) lossPct = "오류(짧음)";
                     let rowSpan = s.groupedCuts.length;
                     
                     for(let i=0; i<rowSpan; i++) {
@@ -1181,7 +1425,6 @@
             });
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-            // 엑셀 열 너비 조정 최적화
             ws['!cols'] = [{wch:5},{wch:10},{wch:20},{wch:5},{wch:10},{wch:5},{wch:10},{wch:10},{wch:10},{wch:20},{wch:25}];
             XLSX.utils.book_append_sheet(wb, ws, "CP_LIST");
             XLSX.writeFile(wb, `CP_LIST_${document.getElementById('projectName').value||'Export'}.xlsx`);
